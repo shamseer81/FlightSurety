@@ -19,12 +19,32 @@
         </button>
     </nav>
 
+    
+
     <main class="container">
 
         <div id="display-wrapper" class="top-20">
         </div>
         <div class="row top-20">
             <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+        </div>
+        <br>
+        
+        <div class="form-container">
+            <h2>Airlines</h2>
+            <br>
+
+            <h4>Register Airline</h4>
+            <label class="form">Address</label> <input type="text" id="register-airline-address">
+            <label class="form">Name</label> <input type="text" id="register-airline-name">
+            <button class="btn btn-primary" id="register-airline">Register</button>
+            <br>
+            <br>
+
+            <h4>Fund Airline</h4>
+            <label class="form">Address</label> <input type="text" id="fund-airline-address">
+            <label class="form">Amount (ETH)</label> <input type="text" id="fund-airline-amount"value=10>
+            <button class="btn btn-primary" id="fund-airline">Fund</button>
         </div>
     </main>
 

@@ -40,6 +40,13 @@ export default class Contract {
             .call({ from: self.owner}, callback);
     }
 
+    setOperatingStatus(mode,callback) {
+        let self = this;
+        self.flightSuretyApp.methods
+             .setOperatingStatus()
+             .call(mode,{ from: self.owner}, callback);
+     }
+
     fetchFlightStatus(flight, callback) {
         let self = this;
         let payload = {

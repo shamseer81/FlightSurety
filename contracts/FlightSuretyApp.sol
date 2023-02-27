@@ -26,14 +26,13 @@ contract FlightSuretyApp {
 
     address private contractOwner;          // Account used to deploy contract
 
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;        
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
+    
 
+    // Blocks all state changes throughout the contract if false
+    bool private operational = true;                                    
+
+
+    FlightSuretyData flightSuretyData;
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -63,6 +62,11 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireIsAirlineFunded()
+    {        
+        require(flightSuretyData.isAirlineFunded(msg.sender), "Caller is not a Funded Airline");  
+        _; 
+    }
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -71,12 +75,10 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor
-                                (
-                                ) 
-                                public 
+    constructor(address dataContract)  public 
     {
         contractOwner = msg.sender;
+        flightSuretyData = FlightSuretyData(dataContract);
     }
 
     /********************************************************************************************/
@@ -85,10 +87,26 @@ contract FlightSuretyApp {
 
     function isOperational() 
                             public 
-                            pure 
+                            view
                             returns(bool) 
     {
-        return true;  // Modify to call data contract's status
+        return operational;  
+    }
+
+    /**
+    * @dev Sets contract operations on/off
+    *
+    * When operational mode is disabled, all write transactions except for this one will fail
+    */    
+    function setOperatingStatus
+                            (
+                                bool mode
+                            ) 
+                            external
+                            requireContractOwner 
+    {
+       require(mode != operational, "New status must be different from existing status");
+        operational = mode;
     }
 
     /********************************************************************************************/
@@ -101,15 +119,45 @@ contract FlightSuretyApp {
     *
     */   
     function registerAirline
-                            (   
+                            ( address airlineAddress  
                             )
-                            external
-                            pure
-                            returns(bool success, uint256 votes)
+                            external   
+                            requireIsOperational                          
+                            requireIsAirlineFunded 
+                            returns(bool success)
     {
-        return (success, 0);
+        
+        //Check airline is already registered 
+        require(!flightSuretyData.isAirlineRegistered(airlineAddress), "Airline is already registered.");
+        int256 voteCount = flightSuretyData.counfOAfAirlinesRegistered();
+        // Get the count of airlines already registered
+        // If the number is above 4 , add the airline to the queue
+        // Else check if the caller is already registered.  If caller/owner is not registered, then fail the registration.
+
+
+        if (voteCount >= 4){
+            //Put Airline in Pending Register to wait for votes to be registered
+            success = flightSuretyData.addToVoting(airlineAddress , msg.sender);
+            return success;
+        }else {
+            //Only existing airline may register a new airline until there are at least FOUR airlines registered
+            if(voteCount <= 2){
+                require(flightSuretyData.isAirlineRegistered(msg.sender), "Caller is not eligible to register ");
+                flightSuretyData.registerAirline(airlineAddress);
+                return true;
+            } else {
+                flightSuretyData.registerAirline(airlineAddress);
+                return true;
+            }
+        }
     }
 
+    
+    function fundAirline() external payable requireIsOperational {
+       require(flightSuretyData.isAirlineRegistered(msg.sender), "Airline is not registered");
+        flightSuretyData.fund();
+
+    }
 
    /**
     * @dev Register a future flight for insuring.
@@ -253,7 +301,8 @@ contract FlightSuretyApp {
                         )
                         external
     {
-        require((oracles[msg.sender].indexes[0] == index) || (oracles[msg.sender].indexes[1] == index) || (oracles[msg.sender].indexes[2] == index), "Index does not match oracle request");
+        require((oracles[msg.sender].indexes[0] == index) || (oracles[msg.sender].indexes[1] == index) || 
+        (oracles[msg.sender].indexes[2] == index), "Index does not match oracle request");
 
 
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp)); 
@@ -271,6 +320,14 @@ contract FlightSuretyApp {
             // Handle flight status as appropriate
             processFlightStatus(airline, flight, timestamp, statusCode);
         }
+    }
+
+    function getAirline()                        
+                        view
+                        external
+                        returns(bool,bool,uint256 )  {
+        
+        return (flightSuretyData.getAirline());
     }
 
 
@@ -331,6 +388,16 @@ contract FlightSuretyApp {
         return random;
     }
 
-// endregion
+   // endregion
 
 }   
+
+ abstract contract FlightSuretyData {
+            function registerAirline(address airlineAddress) virtual  external;
+            function isAirlineRegistered(address airlineAddress) virtual external returns(bool);
+            function isAirlineFunded(address airlineAddress) virtual external returns(bool);
+            function counfOAfAirlinesRegistered() virtual external returns(int256);
+            function addToVoting(address airlineAddress ,address sender  )  virtual external returns(bool);
+            function fund()  virtual external returns(bool);
+            function getAirline() virtual view external returns(bool,bool,uint256 );
+}
