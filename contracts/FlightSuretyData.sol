@@ -198,7 +198,7 @@ contract FlightSuretyData {
                 break;
             }
         }
-        require(!isAllreadyVoted, "This airline has already voted");
+        require(!isAllreadyVoted, "Duplicate proposal to register the airline");
         votes[airlineAddress].push(sender);
         if (votes[airlineAddress].length >= registeredAirlineCount.div(2)) {
             registerAirline(airlineAddress);
@@ -257,17 +257,19 @@ contract FlightSuretyData {
     *      resulting in insurance payouts, the contract should be self-sustaining
     *
     */   
-    function fund (  )
-                            public
+    function fund (uint256 amount, address airline  )
+                            external
                             payable
                             requireIsOperational
-                            requireAirlineRegistered(msg.sender)
+                            returns(bool)
+                            
     {
-        require(msg.value >= 10); 
+        //require(amount >= 10 , 'Ether value should be more than 10'); 
+        airlines[airline].funds += amount;
 
-        airlines[msg.sender].funds += msg.value;
+        airlines[airline].isFunded = true;
 
-        airlines[msg.sender].isFunded = true;
+        return true;
     }
 
       function isAirlineFunded
@@ -279,6 +281,23 @@ contract FlightSuretyData {
                     returns(bool)
     {       
         return (airlines[airlineAddress].isFunded);
+    }
+
+    function registerFlight(
+        string memory number,
+        address airline,
+        uint256 updatedTimestamp
+    ) 
+        external
+        requireIsOperational
+        
+    {
+        bytes32 flightKey = getFlightKey(airline, number, updatedTimestamp);
+        require(!flights[flightKey].isRegistered, "Fligh already registered");
+     
+
+     flights[flightKey]    = Flight(true, STATUS_UNKNOWN, updatedTimestamp, airline );
+        
     }
 
     function getFlightKey
@@ -310,7 +329,7 @@ contract FlightSuretyData {
                             external 
                             payable 
     {
-        fund();
+        
     }
 
 

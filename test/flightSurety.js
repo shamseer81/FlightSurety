@@ -13,7 +13,7 @@ contract('Flight Surety Tests', async (accounts) => {
   /****************************************************************************************/
   /* Operations and Settings                                                              */
   /****************************************************************************************/
-/*
+
   it(`(multiparty) has correct initial isOperational() value`, async function () {
 
     // Get operating status
@@ -72,7 +72,7 @@ contract('Flight Surety Tests', async (accounts) => {
       // Set it back for other tests to work
       await config.flightSuretyData.setOperatingStatus(true);
 
-  }); */
+  }); 
 
   it(' Airline registering and funding ', async () => {
     
@@ -94,7 +94,7 @@ contract('Flight Surety Tests', async (accounts) => {
        assert.equal(false, airlineRegsitered[1], " Airline1 not funded ");
         //fund airline
         let amount = web3.utils.toWei("12", "ether");
-       await config.flightSuretyData.fund({ from: airline1 , value:10 })
+       await config.flightSuretyData.fund( 10,airline1 );
         let airline1Funded  = await config.flightSuretyData.getAirline({ from: airline1 });
        assert.equal(true, airline1Funded[1], " Airline1 funded ");
        assert.equal(10, airline1Funded[2].toNumber(), " Airline1 funded with value 10 "); 
@@ -119,7 +119,7 @@ contract('Flight Surety Tests', async (accounts) => {
       assert.equal(result, false, " airline2 is not funded and hence unable to register airline3 ");
 
     }
-       await config.flightSuretyData.fund({ from: airline2 , value:10 })
+       await config.flightSuretyData.fund(10 , airline2)
        await config.flightSuretyApp.registerAirline(airline3, {from: airline2});
        airline3Result = await config.flightSuretyData.getAirline({ from: airline3 });
        //assert.equal(true, airline3[1], " airline3 funded ");
@@ -156,23 +156,20 @@ contract('Flight Surety Tests', async (accounts) => {
     await config.flightSuretyApp.registerAirline(airline8, {from: accounts[0]});
     result = await config.flightSuretyData.isAirlineRegistered.call(airline8); 
     count = await config.flightSuretyData.counfOAfAirlinesRegistered();
-      
-    assert.equal(result, false, "Multiparty consensus is needed since 4 airlines are registered  ") ; 
-    assert.equal(count, 4, " Count of airline 4 "); 
+    console.log( '1 ' , count);
+    console.log(await config.flightSuretyData.addressesVoted(airline8) )   
+    assert.equal(result, false, "Multiparty consensus is needed since 4 airlines are registered ") ; 
+    assert.equal(count.toNumber(), 4, " Count of airline 4 "); 
 
-    await config.flightSuretyApp.registerAirline(airline8, {from: accounts[0]});
-    result = await config.flightSuretyData.isAirlineRegistered.call(airline8); 
-    count = await config.flightSuretyData.counfOAfAirlinesRegistered();
-    assert.equal(result, false, "Multiparty consensus is needed since 4 airlines are registered  ") ; 
-    assert.equal(count, 4, " Count of airline 4 "); 
-   
-    await config.flightSuretyData.fund({ from: airline6 , value:10 })
+  
+    await config.flightSuretyData.fund(10,airline6 );
     await config.flightSuretyApp.registerAirline(airline8, {from: accounts[6]});
     result = await config.flightSuretyData.isAirlineRegistered.call(airline8); 
+    console.log(await config.flightSuretyData.addressesVoted(airline8) )
     count = await config.flightSuretyData.counfOAfAirlinesRegistered();
 
     assert.equal(result, true, "Multiparty consensus reached  ") ; 
-    assert.equal(count, 5, " Count of airline incremented by one "); 
+    assert.equal(count.toNumber(), 5, " Count of airline incremented by one "); 
 
 
   });

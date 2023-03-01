@@ -1,4 +1,5 @@
 import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
+import FlightSuretyData from '../../build/contracts/FlightSuretyData.json';
 import Config from './config.json';
 import Web3 from 'web3';
 
@@ -8,13 +9,17 @@ export default class Contract {
         let config = Config[network];
         this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
+        this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
+        
         this.initialize(callback);
         this.owner = null;
         this.airlines = [];
         this.passengers = [];
+        this.appAddress = config.appAddress;
+
     }
 
-    initialize(callback) {
+     initialize(callback) {
         this.web3.eth.getAccounts((error, accts) => {
            
             this.owner = accts[0];
@@ -27,8 +32,7 @@ export default class Contract {
 
             while(this.passengers.length < 5) {
                 this.passengers.push(accts[counter++]);
-            }
-
+            }            
             callback();
         });
     }
@@ -60,4 +64,40 @@ export default class Contract {
                 callback(error, payload);
             });
     }
+    async registerAirline(airline, callback) {
+        let self = this;
+
+        self.flightSuretyData.methods.authorizeCaller(this.appAddress).send({ from: self.owner}) ;
+
+        let result =  await self.flightSuretyApp.methods
+            .registerAirline(airline)
+            .send({ from: self.owner}, (error, result) => {
+                callback(error);
+            });
+   
+    }
+
+    fundAirline( amount,address, callback) {
+        let self = this;
+       console.log('config.amount : ' , amount);
+       console.log('config.address : ' , address);
+       self.flightSuretyData.methods.authorizeCaller(this.appAddress).send({ from: self.owner}, callback) ;
+        self.flightSuretyApp.methods
+            .fundAirline()
+            .send({ from: address, value:amount}, callback)            
+    }
+   
+    async registerFlight(airline, number, callback) {
+        let self = this;
+        let timestamp = Math.floor(Date.now() / 1000);
+        self.flightSuretyData.methods.authorizeCaller(this.appAddress).send({ from: self.owner}) ;
+
+        let result =  await self.flightSuretyData.methods
+            .registerFlight(number, airline,timestamp )
+            .send({ from: self.owner, gas: '1000000'}, (error, result) => {
+                callback(error);
+            });
+   
+    }
+
 }

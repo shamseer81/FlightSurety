@@ -153,9 +153,10 @@ contract FlightSuretyApp {
     }
 
     
-    function fundAirline() external payable requireIsOperational {
+    function fundAirline() external payable
+     requireIsOperational   returns(bool success) {
        require(flightSuretyData.isAirlineRegistered(msg.sender), "Airline is not registered");
-        flightSuretyData.fund();
+       return  flightSuretyData.fund(msg.value, msg.sender);
 
     }
 
@@ -163,13 +164,19 @@ contract FlightSuretyApp {
     * @dev Register a future flight for insuring.
     *
     */  
-    function registerFlight
-                                (
-                                )
-                                external
-                                pure
+   function registerFlight(uint256 updatedTimeStamp, string memory number , address airline)
+        external
+        requireIsOperational
+        requireIsAirlineFunded
+        returns (bool)
     {
-
+        //bytes32 key = getFlightKey(airline, number, updatedTimeStamp);
+        flightSuretyData.registerFlight(
+            number,
+            airline,
+            updatedTimeStamp);
+        //require(result, "Failed to register flight");
+        return true;
     }
     
    /**
@@ -330,6 +337,7 @@ contract FlightSuretyApp {
         return (flightSuretyData.getAirline());
     }
 
+ 
 
     function getFlightKey
                         (
@@ -398,6 +406,7 @@ contract FlightSuretyApp {
             function isAirlineFunded(address airlineAddress) virtual external returns(bool);
             function counfOAfAirlinesRegistered() virtual external returns(int256);
             function addToVoting(address airlineAddress ,address sender  )  virtual external returns(bool);
-            function fund()  virtual external returns(bool);
+            function fund(uint256 amount, address airline)  virtual external returns(bool);
             function getAirline() virtual view external returns(bool,bool,uint256 );
+            function registerFlight(string memory flightNumber, address airline, uint256 updatedTimestamp) virtual  external ;
 }
