@@ -38,6 +38,20 @@ contract FlightSuretyData {
 
     mapping(address => uint256) private authorizedCallers;
 
+      //Insurance per passenger
+    struct Insurance {
+        address [] passengers;
+        mapping(address => uint256) insuranceAmount; 
+        mapping(address => uint256) payOutAmount;  
+        bool isPaidOut;
+    }
+
+    // Flight Insurance. Collection of passengers with insurance by Flight
+     mapping(bytes32 => Insurance) private flightInsurance;
+
+    //Passenger funds tracker
+    mapping(address => uint256) public passengerFunds;
+
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -101,6 +115,14 @@ contract FlightSuretyData {
         require(
             authorizedCallers[msg.sender] == 1,
             "Not from an authorized caller"
+        );
+        _;
+    }
+
+     modifier requireValidAmount() {
+        require(
+            msg.value > 0,
+            "Payment amount cannot must be greater than zero"
         );
         _;
     }
@@ -219,13 +241,20 @@ contract FlightSuretyData {
     * @dev Buy insurance for a flight
     *
     */   
-    function buy
-                            (                             
-                            )
+function buy
+                        (   string memory flight,
+                            address passenger,
+                            uint256 amount,
+                            uint256  updatedTimestamp                   
+                            ) requireIsOperational 
                             external
                             payable
     {
-
+        bytes32 flightKey = getFlightKey(passenger, flight, updatedTimestamp);       
+        flightInsurance[flightKey].insuranceAmount[passenger] = amount;
+        flightInsurance[flightKey].passengers.push(passenger);
+        flightInsurance[flightKey].isPaidOut = false;
+    
     }
 
     /**
@@ -296,7 +325,7 @@ contract FlightSuretyData {
         require(!flights[flightKey].isRegistered, "Fligh already registered");
      
 
-     flights[flightKey]    = Flight(true, STATUS_UNKNOWN, updatedTimestamp, airline );
+        flights[flightKey]    = Flight(true, STATUS_UNKNOWN, updatedTimestamp, airline );
         
     }
 

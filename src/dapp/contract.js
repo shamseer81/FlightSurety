@@ -79,8 +79,6 @@ export default class Contract {
 
     fundAirline( amount,address, callback) {
         let self = this;
-       console.log('config.amount : ' , amount);
-       console.log('config.address : ' , address);
        self.flightSuretyData.methods.authorizeCaller(this.appAddress).send({ from: self.owner}, callback) ;
         self.flightSuretyApp.methods
             .fundAirline()
@@ -95,6 +93,20 @@ export default class Contract {
         let result =  await self.flightSuretyData.methods
             .registerFlight(number, airline,timestamp )
             .send({ from: self.owner, gas: '1000000'}, (error, result) => {
+                callback(error);
+            });
+   
+    }
+
+    async buyInsurance(flight,amount,address, callback) {
+        
+        let self = this;
+        let timestamp = Math.floor(Date.now() / 1000);
+        self.flightSuretyData.methods.authorizeCaller(this.appAddress).send({ from: address}) ;
+
+        let result =  await self.flightSuretyApp.methods
+            .buy(flight, timestamp)
+            .send({ from: address, value:amount, gas: '1000000'}, (error, result) => {
                 callback(error);
             });
    

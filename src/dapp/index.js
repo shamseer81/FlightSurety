@@ -55,6 +55,18 @@ import './flightsurety.css';
                     display('Flight', 'Register Flight', [ { label: 'Status', error: error, value: address } ]);
                 });
             })
+
+            DOM.elid('buy-insurance').addEventListener('click', async () => {
+          
+                let flight = DOM.elid('buy-insurance-flight').value;
+                let address = DOM.elid('buy-insurance-address').value;
+                let amount = DOM.elid('buy-insurance-amount').value;
+                // Write transaction
+                contract.buyInsurance(flight,amount,address, (error, result) => {
+                display('Insruance', 'Purchase Insruance', [ { label: 'Insurance Status', error: error, value: amount } ]);
+            });
+        })
+
     
     });
     

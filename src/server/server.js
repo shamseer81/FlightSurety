@@ -5,9 +5,122 @@ import express from 'express';
 
 
 let config = Config['localhost'];
-let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
+
+
+console.log(' account1' , config);
+var ether_port = 'ws://localhost:7545'
+var web3       = new Web3(new Web3.providers.WebsocketProvider(ether_port));
+//let web3 = new Web3(new Web3.providers.HttpProvider(config.url));
+console.log(' account2');
 web3.eth.defaultAccount = web3.eth.accounts[0];
+console.log(' account3');
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
+console.log(' account4');
+let oracles = [];
+var FIRST_ORACLE_ADDRESS = 10, NUMBER_OF_ORACLES = 40;
+console.log(' account5');
+
+web3.eth.getAccounts().then(accounts => {
+  console.log(' account5A');
+  if (accounts.length < FIRST_ORACLE_ADDRESS + NUMBER_OF_ORACLES) {
+    console.log('[Error]: there are not enough accounts to run oracles server.' + NUMBER_OF_ORACLES + ' accounts are needed.');
+    return; 
+  }
+  console.log(' account6');
+  // Initialize oracles addresses and indexes with smart contract
+  var registeredOracleCount = 0;
+  console.log(' account7');
+    for (var i = FIRST_ORACLE_ADDRESS; i < FIRST_ORACLE_ADDRESS + NUMBER_OF_ORACLES; i++) {
+      console.log(' account8');
+      let account = accounts[i];
+      console.log(' account' , account);
+      oracles.push(account); 
+      flightSuretyApp.methods.registerOracle().send({
+        "from": account,     
+        "gas": 5000000,
+        "gasPrice": 100000000000
+      }).then(result => {
+        registeredOracleCount += 1;
+        console.log(`${registeredOracleCount}: ${account} registered`);
+        if (registeredOracleCount == NUMBER_OF_ORACLES) {
+           console.log(`\n${NUMBER_OF_ORACLES} oracles have been successfully registered and assigned addresses.`);
+        }
+      }).catch(err => {
+        console.log('Could not create oracle at address: ' + account + '\n\tbecause: ' + err);
+      })
+    }
+
+    console.log('Oracles server is up...\nOracles registered and assigned addresses...');
+    console.log('Listening to a request event...');
+
+    oracles.forEach(oracle => {
+      flightSuretyApp.methods
+        .getMyIndexes().call({
+          "from": oracle,
+          "gas": 5000000,
+          "gasPrice": 100000000000
+        }).then(result => {
+          console.log('Assigned Indices: ' + result[0] + ', ' + result[1] + ', ' + result[2] + '\tfor oracle: ' + oracle);
+
+        }).catch(error => {
+          console.log('Could not retrieve oracle indices because: ' + error);
+        })
+
+    });
+
+    console.log('Oracles server is up...');
+    console.log('Listening to a request event...');
+
+    
+    flightSuretyApp.events.OracleRequest({ fromBlock: 0 },
+      function (error, event) {
+        if (error) console.log(error);
+        console.log('Caught an event: ');
+        let eventResult = event['returnValues'];
+        console.log(eventResult);
+        let index = eventResult['index'];
+        let airline = eventResult['airline'];
+        let flight = eventResult['flight'];
+        let timestamp = eventResult['departureTime'];
+
+        console.log('Only oracles with index ' + index + ' should respond to the request.');
+        
+        oracles.forEach(oracle => {
+          flightSuretyApp.methods
+            .getMyIndexes().call({
+              "from": oracle,
+              "gas": 5000000,
+              "gasPrice": 100000000000
+            }).then(result => {
+              // Match oracle and respond with random status
+              if (result[0] == index || result[1] == index || result[2] == index) 
+              {
+                // Generate a random status
+                let flightStatus = Math.floor(Math.random() * 6) * 10;
+                console.log('index=' + index + ' result[0]=' + result[0] + ' result[1]=' + result[1] + ' result[2]=' + result[2]);
+                console.log('Random flight status: ' + flightStatus + ' from oracle: ' + oracle);
+                // Respond to the contract with the status code
+                flightSuretyApp.methods
+                  .submitOracleResponse(index, airline, flight, timestamp, flightStatus).send({
+                    "from": oracle,
+                    "gas": 5000000,
+                    "gasPrice": 100000000000
+                  }).then(result => {
+                    console.log('Oracle [' + oracle + '] response submitted successfully - Flight status: ' + flightStatus);
+                  }).catch(error => {
+                    console.log('Could not submit oracle response because: ' + error)
+                  });
+              }
+
+            }).catch(error => {
+              console.log('Could not retrieve oracle indices because: ' + error);
+            })
+
+        });
+      });
+  
+});
+
 
 
 flightSuretyApp.events.OracleRequest({

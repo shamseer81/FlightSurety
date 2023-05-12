@@ -32,7 +32,7 @@ contract FlightSuretyApp {
     bool private operational = true;                                    
 
 
-    FlightSuretyData flightSuretyData;
+    FlightSuretyData  flightSuretyData ;
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -250,34 +250,6 @@ contract FlightSuretyApp {
     // Key = hash(index, flight, timestamp)
     mapping(bytes32 => ResponseInfo) private oracleResponses;
 
-    // Event fired each time an oracle submits a response
-    event FlightStatusInfo(address airline, string flight, uint256 timestamp, uint8 status);
-
-    event OracleReport(address airline, string flight, uint256 timestamp, uint8 status);
-
-    // Event fired when flight status request is submitted
-    // Oracles track this and if they have a matching index
-    // they fetch data and submit a response
-    event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
-
-
-    // Register an oracle with the contract
-    function registerOracle
-                            (
-                            )
-                            external
-                            payable
-    {
-        // Require registration fee
-        require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
-
-        uint8[3] memory indexes = generateIndexes(msg.sender);
-
-        oracles[msg.sender] = Oracle({
-                                        isRegistered: true,
-                                        indexes: indexes
-                                    });
-    }
 
     function getMyIndexes
                             (
@@ -376,6 +348,15 @@ contract FlightSuretyApp {
         return indexes;
     }
 
+     function buy(string memory flight,uint256 updatedTimestamp )
+        public
+        payable
+        requireIsOperational        
+    {
+         payable (address(flightSuretyData)).transfer(msg.value); 
+         flightSuretyData.buy(flight, msg.sender, msg.value,updatedTimestamp);
+    }
+
     // Returns array of three non-duplicating integers from 0-9
     function getRandomIndex
                             (
@@ -396,6 +377,41 @@ contract FlightSuretyApp {
         return random;
     }
 
+ 
+
+    // Event fired each time an oracle submits a response
+    event FlightStatusInfo(
+        address airline,
+        string flight,
+        uint256 departureTime,
+        uint8 status
+    );
+
+    event OracleReport(
+        address airline,
+        string flight,
+        uint256 departureTime,
+        uint8 status
+    );
+
+    // Event fired when flight status request is submitted
+    // Oracles track this and if they have a matching index
+    // they fetch data and submit a response
+    event OracleRequest(
+        uint8 index,
+        address airline,
+        string flight,
+        uint256 departureTime
+    );
+
+       function registerOracle() external payable requireIsOperational {
+        // Require registration fee        
+
+        uint8[3] memory indexes = generateIndexes(msg.sender);
+
+        oracles[msg.sender] = Oracle({isRegistered: true, indexes: indexes});
+    }
+
    // endregion
 
 }   
@@ -409,4 +425,5 @@ contract FlightSuretyApp {
             function fund(uint256 amount, address airline)  virtual external returns(bool);
             function getAirline() virtual view external returns(bool,bool,uint256 );
             function registerFlight(string memory flightNumber, address airline, uint256 updatedTimestamp) virtual  external ;
+            function buy(string memory flightNumber, address passenger, uint256 amount,uint256  updatedTimestamp)  virtual  external ;
 }
