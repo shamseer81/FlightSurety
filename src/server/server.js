@@ -7,33 +7,30 @@ import express from 'express';
 let config = Config['localhost'];
 
 
-console.log(' account1' , config);
-var ether_port = 'ws://localhost:7545'
-var web3       = new Web3(new Web3.providers.WebsocketProvider(ether_port));
+
+var ether_port = 'ws://127.0.0.1:7545'
+let web3       = new Web3(new Web3.providers.WebsocketProvider(ether_port));
 //let web3 = new Web3(new Web3.providers.HttpProvider(config.url));
-console.log(' account2');
+
 web3.eth.defaultAccount = web3.eth.accounts[0];
 console.log(' account3');
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
-console.log(' account4');
+
 let oracles = [];
 var FIRST_ORACLE_ADDRESS = 10, NUMBER_OF_ORACLES = 40;
 console.log(' account5');
 
 web3.eth.getAccounts().then(accounts => {
-  console.log(' account5A');
   if (accounts.length < FIRST_ORACLE_ADDRESS + NUMBER_OF_ORACLES) {
     console.log('[Error]: there are not enough accounts to run oracles server.' + NUMBER_OF_ORACLES + ' accounts are needed.');
     return; 
   }
-  console.log(' account6');
+ 
   // Initialize oracles addresses and indexes with smart contract
   var registeredOracleCount = 0;
-  console.log(' account7');
+ 
     for (var i = FIRST_ORACLE_ADDRESS; i < FIRST_ORACLE_ADDRESS + NUMBER_OF_ORACLES; i++) {
-      console.log(' account8');
       let account = accounts[i];
-      console.log(' account' , account);
       oracles.push(account); 
       flightSuretyApp.methods.registerOracle().send({
         "from": account,     
