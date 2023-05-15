@@ -39,9 +39,13 @@ Deploy the contents of the ./dapp folder
 
 ## Versions
 Truffle v5.9.0 (core: 5.9.0)
+
 Ganache v7.8.0
+
 Solidity - >0.5.17 (solc-js)
+
 Node v18.14.0
+
 Web3.js v1.10.0
 
 ## Resources
