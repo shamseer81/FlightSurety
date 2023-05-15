@@ -16,7 +16,6 @@ To install, download or clone the repo, then:
 To run truffle tests:
 
 `truffle test ./test/flightSurety.js`
-`truffle test ./test/oracles.js`
 
 To use the dapp:
 
@@ -30,7 +29,6 @@ To view dapp:
 ## Develop Server
 
 `npm run server`
-`truffle test ./test/oracles.js`
 
 ## Deploy
 
@@ -39,6 +37,12 @@ To build dapp for prod:
 
 Deploy the contents of the ./dapp folder
 
+## Versions
+Truffle v5.9.0 (core: 5.9.0)
+Ganache v7.8.0
+Solidity - >0.5.17 (solc-js)
+Node v18.14.0
+Web3.js v1.10.0
 
 ## Resources
 
